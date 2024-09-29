@@ -125,7 +125,7 @@ document.getElementById('questionForm').addEventListener('submit', async functio
     var question = document.getElementById('question').value;
 
     try {
-        const response = await fetch('TVOJ_GOOGLE_APPS_SCRIPT_URL', {
+        const response = await fetch('https://script.google.com/macros/s/AKfycbwutWRk65IufdHHp3JOXPa9YA2YdgMZD88yxKAxd7P6LqRjtP6jkVqxNAO9VWoqHJ-6RA/exec', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
