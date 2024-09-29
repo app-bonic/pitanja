@@ -4,99 +4,28 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Postavi pitanje predavaču</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        /* Osnovni stilovi */
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Roboto', sans-serif;
-        }
-
+        /* Stilovi forme */
         body {
-            background-color: #f0f4f8;
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
-            padding: 20px;
         }
-
         .form-container {
-            background-color: #ffffff;
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        input, textarea, button {
             width: 100%;
-            max-width: 450px;
-            transition: all 0.3s ease-in-out;
-        }
-
-        h2 {
-            text-align: center;
-            color: #333;
-            margin-bottom: 30px;
-        }
-
-        label {
-            font-weight: bold;
-            color: #666;
-            margin-bottom: 8px;
-            display: block;
-        }
-
-        input[type="text"], textarea {
-            width: 100%;
-            padding: 12px;
-            margin-bottom: 20px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            background-color: #f9f9f9;
-            font-size: 16px;
-            transition: border-color 0.3s ease;
-        }
-
-        input[type="text"]:focus, textarea:focus {
-            border-color: #4a90e2;
-            outline: none;
-        }
-
-        textarea {
-            resize: vertical;
-            min-height: 120px;
-        }
-
-        button {
-            width: 100%;
-            padding: 15px;
-            background-color: #4a90e2;
-            border: none;
-            color: white;
-            font-size: 18px;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
-
-        button:hover {
-            background-color: #357ab8;
-        }
-
-        button:focus {
-            outline: none;
-        }
-
-        #statusMessage {
-            text-align: center;
-            margin-top: 20px;
-            font-size: 16px;
-        }
-
-        #questionText {
-            margin-top: 10px;
-            font-style: italic;
-            color: #555;
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
         }
     </style>
 </head>
@@ -104,52 +33,43 @@
     <div class="form-container">
         <form id="questionForm">
             <h2>Postavi pitanje predavaču</h2>
-            
             <label for="name">Ime:</label>
-            <input type="text" id="name" name="name" placeholder="Unesite svoje ime" required>
+            <input type="text" id="name" name="name" required>
 
-            <label for="question">Vaše pitanje:</label>
-            <textarea id="question" name="question" placeholder="Upišite svoje pitanje ovdje" required></textarea>
-            
+            <label for="question">Pitanje:</label>
+            <textarea id="question" name="question" required></textarea>
+
             <button type="submit">Pošalji</button>
         </form>
-        <p id="statusMessage"></p> <!-- Poruka o statusu slanja -->
-        <p id="questionText"></p> <!-- Tekst postavljenog pitanja -->
+        <p id="statusMessage"></p>
     </div>
 
     <script>
-document.getElementById('questionForm').addEventListener('submit', async function(e) {
-    e.preventDefault(); // Spriječi defaultno ponašanje forme
+        document.getElementById('questionForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
 
-    var name = document.getElementById('name').value;
-    var question = document.getElementById('question').value;
+            var name = document.getElementById('name').value;
+            var question = document.getElementById('question').value;
 
-    try {
-        const response = await fetch('https://script.google.com/macros/s/AKfycbwutWRk65IufdHHp3JOXPa9YA2YdgMZD88yxKAxd7P6LqRjtP6jkVqxNAO9VWoqHJ-6RA/exec', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ name: name, question: question }) // Provjeri zatvorene zagrade
+            // Slanje podataka putem fetch sa `no-cors`
+            try {
+                await fetch('https://script.google.com/macros/s/AKfycbwutWRk65IufdHHp3JOXPa9YA2YdgMZD88yxKAxd7P6LqRjtP6jkVqxNAO9VWoqHJ-6RA/exec', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    mode: 'no-cors', // Rješenje za CORS
+                    body: JSON.stringify({ name: name, question: question })
+                });
+
+                document.getElementById('statusMessage').textContent = "Pitanje je uspješno poslano!";
+                document.getElementById('statusMessage').style.color = "green";
+            } catch (error) {
+                document.getElementById('statusMessage').textContent = "Došlo je do pogreške prilikom slanja!";
+                document.getElementById('statusMessage').style.color = "red";
+                console.error('Greška:', error);
+            }
         });
-
-        const result = await response.json(); // Očekuj JSON odgovor
-        if (result.status === "success") {
-            document.getElementById('statusMessage').textContent = "Uspješno ste poslali poruku moderatoru!";
-            document.getElementById('statusMessage').style.color = "green";
-            document.getElementById('questionText').textContent = "Vaše pitanje: \"" + question + "\"";
-            document.getElementById('name').value = '';
-            document.getElementById('question').value = '';
-        } else {
-            document.getElementById('statusMessage').textContent = "Došlo je do pogreške prilikom slanja!";
-            document.getElementById('statusMessage').style.color = "red";
-        }
-    } catch (error) {
-        console.error('Greška prilikom slanja:', error); // Ispis greške
-        document.getElementById('statusMessage').textContent = "Došlo je do pogreške prilikom slanja!";
-        document.getElementById('statusMessage').style.color = "red";
-    }
-});
     </script>
 </body>
 </html>
