@@ -118,25 +118,37 @@
     </div>
 
     <script>
-        document.getElementById('questionForm').addEventListener('submit', function(e) {
-            e.preventDefault();
+  document.getElementById('questionForm').addEventListener('submit', async function(e) {
+    e.preventDefault(); // Spriječi defaultno ponašanje forme
 
-            var name = document.getElementById('name').value;
-            var question = document.getElementById('question').value;
+    var name = document.getElementById('name').value;
+    var question = document.getElementById('question').value;
 
-            // Ovdje bi išao kod za slanje podataka u Google Sheet ili drugi sustav
+    // Provjeri što se šalje
+    console.log({ name: name, question: question }); // Logiraj podatke
 
-            // Prikaz poruke o uspješnom slanju
-            document.getElementById('statusMessage').textContent = "Uspješno ste poslali poruku moderatoru!";
-            document.getElementById('statusMessage').style.color = "green";
+    const response = await fetch('https://script.google.com/macros/s/AKfycbyy5CsFQw-oeZ2pZEGzmJw-U9E27U8CenUVujYMtq4CmwKXJYPJ7CZWdReYpWt4etwB/exec', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ name: name, question: question }) // Pretvori u JSON
+    });
 
-            // Prikaz teksta pitanja koje je korisnik poslao
-            document.getElementById('questionText').textContent = "Vaše pitanje: \"" + question + "\"";
+    const result = await response.json(); // Očekuj JSON odgovor
+    console.log(result); // Logiraj odgovor
 
-            // Očisti formu nakon slanja
-            document.getElementById('name').value = '';
-            document.getElementById('question').value = '';
-        });
+    if (result.status === "success") {
+        document.getElementById('statusMessage').textContent = "Uspješno ste poslali poruku moderatoru!";
+        document.getElementById('statusMessage').style.color = "green";
+        document.getElementById('questionText').textContent = "Vaše pitanje: \"" + question + "\"";
+        document.getElementById('name').value = '';
+        document.getElementById('question').value = '';
+    } else {
+        document.getElementById('statusMessage').textContent = "Došlo je do pogreške prilikom slanja!";
+        document.getElementById('statusMessage').style.color = "red";
+    }
+});
     </script>
 </body>
 </html>
