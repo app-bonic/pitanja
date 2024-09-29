@@ -98,6 +98,23 @@
             font-style: italic;
             color: #555;
         }
+
+        /* Spinner stilovi */
+        #spinner {
+            display: none; /* Skriveno dok se ne pokrene */
+            border: 4px solid #f3f3f3; /* Svijetla boja pozadine */
+            border-top: 4px solid #3498db; /* Plava boja za animaciju */
+            border-radius: 50%; /* Zaobljeni oblik */
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite; /* Pokreće animaciju */
+            margin: 20px auto; /* Centrirano */
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -113,6 +130,9 @@
             
             <button type="submit">Pošalji</button>
         </form>
+
+        <div id="spinner"></div> <!-- Ovdje ide spinner -->
+        
         <p id="statusMessage"></p> <!-- Poruka o statusu slanja -->
         <p id="questionText"></p> <!-- Tekst postavljenog pitanja -->
     </div>
@@ -123,6 +143,10 @@
 
             var name = document.getElementById('name').value;
             var question = document.getElementById('question').value;
+            var spinner = document.getElementById('spinner'); // Dohvati spinner
+
+            // Prikaži spinner prije nego što pošalješ podatke
+            spinner.style.display = 'block';
 
             try {
                 await fetch('https://script.google.com/macros/s/AKfycbwutWRk65IufdHHp3JOXPa9YA2YdgMZD88yxKAxd7P6LqRjtP6jkVqxNAO9VWoqHJ-6RA/exec', {
@@ -134,8 +158,11 @@
                     body: JSON.stringify({ name: name, question: question })
                 });
 
+                // Sakrij spinner nakon uspješnog slanja
+                spinner.style.display = 'none';
+
                 // Prikaz poruke o uspješnom slanju
-                document.getElementById('statusMessage').textContent = "Uspješno ste poslali poruku!";
+                document.getElementById('statusMessage').textContent = "Uspješno ste poslali poruku moderatoru!";
                 document.getElementById('statusMessage').style.color = "green";
 
                 // Prikaz teksta pitanja koje je korisnik poslao
@@ -146,13 +173,13 @@
                 document.getElementById('question').value = '';
 
             } catch (error) {
+                // Sakrij spinner ako dođe do greške
+                spinner.style.display = 'none';
                 document.getElementById('statusMessage').textContent = "Došlo je do pogreške prilikom slanja!";
                 document.getElementById('statusMessage').style.color = "red";
                 console.error('Greška prilikom slanja:', error);
             }
         });
     </script>
-</body>
-</html>
 </body>
 </html>
