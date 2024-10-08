@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Raspored Događaja</title>
+    <link rel="stylesheet" href="styles.css">
+
+    <!-- Firebase v8 CDN (umjesto Firebase v9 koji koristi module) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+</head>
+<body>
+
+    <!-- Raspored događaja -->
+    <div class="schedule-container"></div>
+
+    <!-- Modal prozor za detalje -->
+    <div id="details-modal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal()">&times;</span> <!-- X dugme -->
+            <h3 id="modal-title"></h3>
+            <p id="modal-speaker"></p>
+            <p id="modal-time"></p>
+            <p id="modal-location"></p>
+            <p id="modal-description"></p>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
