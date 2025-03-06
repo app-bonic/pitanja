@@ -32,7 +32,7 @@
         <div id="schedule-section" style="display:none;">
             <iframe 
                 src="https://app-bonic.github.io/HSDHM/raspored/raspored.html" 
-                style="width:100%; height:80vh; border:none;"
+                style="width:100%; height:100%; border:none;"
                 title="Raspored"
             ></iframe>
         </div>
@@ -53,16 +53,7 @@
             updateDoc 
         } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
-        // ZAMIJENI SA SVOJIM FIREBASE PODACIMA
-        const firebaseConfig = {
-        apiKey: "AIzaSyBbiOkVEUi_9MzA-apTVr-OR5qqmM8iKSs",
-        authDomain: "kongres-app.firebaseapp.com",
-        databaseURL: "https://kongres-app-default-rtdb.europe-west1.firebasedatabase.app",
-        projectId: "kongres-app",
-        storageBucket: "kongres-app.firebasestorage.app",
-        messagingSenderId: "965427055352",
-        appId: "1:965427055352:web:f7ec9b7e49803940f5890d"
-        };
+  
     
 
         const app = initializeApp(firebaseConfig);
