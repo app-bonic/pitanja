@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern Web App</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+   
+</head>
+<body>
+    <header>
+        <div class="time" id="current-time"></div>
+        <div class="stopwatch-container">
+            <div class="stopwatch" id="stopwatch">00:00:00</div>
+            <button class="reset-btn" onclick="resetStopwatch()">
+                <i class="fas fa-sync-alt"></i>
+            </button>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="buttons">
+            <button id="btn-questions" class="notification-btn">
+                <span class="dropdown-arrow"></span> <!-- Strelica na lijevoj strani -->
+                Pitanja iz publike
+                <div class="pulse-badge" id="questions-badge">0</div>
+            </button>
+            
+            <button id="btn-schedule">Raspored</button>
+        </div>
+
+        <div id="schedule-section" style="display:none;">
+            <iframe 
+                src="https://app-bonic.github.io/HSDHM/raspored/raspored.html" 
+                style="width:100%; height:80vh; border:none;"
+                title="Raspored"
+            ></iframe>
+        </div>
+
+        <div id="questions-section">
+            <div class="questions-container" id="unread-questions"></div>
+            <div class="questions-container" id="read-questions"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { 
+            getFirestore, 
+            collection, 
+            onSnapshot, 
+            doc, 
+            updateDoc 
+        } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+
+        // ZAMIJENI SA SVOJIM FIREBASE PODACIMA
+        const firebaseConfig = {
+        apiKey: "AIzaSyBbiOkVEUi_9MzA-apTVr-OR5qqmM8iKSs",
+        authDomain: "kongres-app.firebaseapp.com",
+        databaseURL: "https://kongres-app-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "kongres-app",
+        storageBucket: "kongres-app.firebasestorage.app",
+        messagingSenderId: "965427055352",
+        appId: "1:965427055352:web:f7ec9b7e49803940f5890d"
+        };
+    
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // UI FUNKCIONALNOSTI
+        let stopwatchInterval;
+        let seconds = 0, minutes = 0, hours = 0;
+
+        const initApp = () => {
+            // Postavi sat
+            setInterval(updateTime, 1000);
+            updateTime();
+
+            // Event listener za pitanja
+            document.getElementById('btn-questions').addEventListener('click', toggleQuestions);
+            
+            // Postavi real-time listener
+            setupRealTimeListener();
+        };
+
+        const updateTime = () => {
+            const timeString = new Date().toLocaleTimeString('en-GB', { 
+                hour12: false 
+            });
+            document.getElementById('current-time').textContent = timeString;
+        };
+
+        const toggleQuestions = () => {
+            const section = document.getElementById('questions-section');
+            section.style.display = section.style.display === 'none' ? 'block' : 'none';
+        };
+
+        // FIREBASE FUNKCIONALNOSTI
+        const setupRealTimeListener = () => {
+            onSnapshot(collection(db, "questions"), (snapshot) => {
+                const questions = snapshot.docs
+                    .filter(doc => doc.data().status !== 'obrisano')
+                    .map(doc => ({ id: doc.id, ...doc.data() }));
+
+                renderQuestions(questions);
+            });
+        };
+
+        const renderQuestions = (questions) => {
+            const unreadContainer = document.getElementById('unread-questions');
+            const readContainer = document.getElementById('read-questions');
+            
+            unreadContainer.innerHTML = '';
+            readContainer.innerHTML = '';
+
+            // Podijeli pitanja na nepročitana i pročitana
+            const unreadQuestions = questions.filter(q => q.status === 'nepročitano');
+            const readQuestions = questions.filter(q => q.status === 'pročitano');
+
+            // Sortiraj pročitana pitanja po datumu i vremenu (od najnovijeg)
+            readQuestions.sort((a, b) => {
+                const parseDate = (dateStr) => {
+                    const [day, month, year] = dateStr.split('.');
+                    return new Date(year, month-1, day);
+                };
+                
+                const dateA = parseDate(a.date);
+                const dateB = parseDate(b.date);
+                
+                // Prvo sortiraj po datumu, pa po vremenu
+                return dateB - dateA || b.time.localeCompare(a.time);
+            });
+
+            // Prikazi sva nepročitana pitanja
+            unreadQuestions.forEach(question => {
+                unreadContainer.appendChild(createQuestionElement(question));
+            });
+
+            // Prikazi sortirana pročitana pitanja
+            readQuestions.forEach(question => {
+                readContainer.appendChild(createQuestionElement(question));
+            });
+
+    updateCounter(unreadQuestions.length);
+};
+
+        const createQuestionElement = (question) => {
+
+            const formattedText = question.question
+            .replace(/\\n/g, '\n') // Vrati originalne nove redove
+            .replace(/\n/g, '<br>'); // Zamijeni sa HTML break tagovi
+
+            // Dodaj formatiranje vremena
+            const formatTimeTo24h = (timeString) => {
+                if (!timeString) return '';
+                return new Date(`2000-01-01 ${timeString}`)
+                    .toLocaleTimeString('en-GB', { 
+                        hour12: false, 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                    });
+            };
+
+            const div = document.createElement('div');
+            div.className = `question-box ${question.status}`;
+            div.innerHTML = `
+                <span class="question-date">${question.date}</span>
+                <span class="question-time">${formatTimeTo24h(question.time)}</span><br>
+               <strong>${question.name}</strong> <div class="question-text">${formattedText}</div>
+                <button class="action-button ${question.status === 'nepročitano' ? 'checkmark' : 'delete-btn'}">
+                    ${question.status === 'nepročitano' ? '✓' : '✕'}
+                </button>
+            `;
+
+            div.querySelector('button').addEventListener('click', () => {
+                handleQuestionAction(question);
+            });
+
+            return div;
+        };
+
+        const handleQuestionAction = async (question) => {
+            const newStatus = question.status === 'nepročitano' ? 'pročitano' : 'obrisano';
+            await updateDoc(doc(db, "questions", question.id), { status: newStatus });
+        };
+
+        const updateCounter = (count) => {
+    const badge = document.getElementById('questions-badge');
+    badge.textContent = count;
+    
+    if(count > 0) {
+        badge.style.display = 'flex';
+        badge.classList.add('pulse');
+    } else {
+        badge.style.display = 'none';
+        badge.classList.remove('pulse');
+    }
+};
+
+
+        //iframe
+        document.getElementById('btn-schedule').addEventListener('click', () => {
+    const scheduleSection = document.getElementById('schedule-section');
+    scheduleSection.style.display = scheduleSection.style.display === 'none' ? 'block' : 'none';
+});
+        // ŠTOPERICA
+        document.getElementById('stopwatch').addEventListener('click', () => {
+            if (!stopwatchInterval) {
+                stopwatchInterval = setInterval(updateStopwatch, 1000);
+            } else {
+                clearInterval(stopwatchInterval);
+                stopwatchInterval = null;
+            }
+        });
+
+        const updateStopwatch = () => {
+            seconds++;
+            if (seconds >= 60) {
+                seconds = 0;
+                minutes++;
+                if (minutes >= 60) {
+                    minutes = 0;
+                    hours++;
+                }
+            }
+            document.getElementById('stopwatch').textContent = 
+                `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        };
+
+        window.resetStopwatch = () => {
+            clearInterval(stopwatchInterval);
+            stopwatchInterval = null;
+            seconds = minutes = hours = 0;
+            document.getElementById('stopwatch').textContent = '00:00:00';
+        };
+
+        // POKRENI APLIKACIJU
+        window.onload = initApp;
+
+
+    </script>
+  <style>
+
+/* Globalni stilovi */
+body, html {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f9;
+}
+
+/* Header */
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    background-color: #396782;
+    color: white;
+}
+
+/* Vrijeme u headeru */
+.time {
+    font-size: 18px;
+    
+}
+
+/* Štoperica */
+.stopwatch-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.stopwatch {
+    font-size: 18px;
+    cursor: pointer;
+}
+
+.reset-btn {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    font-size: 18px;
+}
+
+/* Glavni container */
+.container {
+    padding-top: 0 !important;
+    padding: 20px;
+    text-align: center;
+}
+
+/* Dugmad */
+.buttons {
+    margin-top: 20px !important; /* Smanji razmak ispod headera */
+    margin: 20px 0;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+button {
+    padding: 12px 24px;
+    border: none;
+    background-color: #396782;
+    color: white;
+    cursor: pointer;
+    border-radius: 8px;
+    font-size: 16px;
+}
+
+button:hover {
+    background-color: #2a4f5e;
+}
+
+/* Broj nepročitanih pitanja */
+.questions-count {
+    position: absolute;
+    top: 5px;
+    right: 15px;
+    background-color: red;
+    color: white;
+    border-radius: 50%;
+    padding: 5px 10px;
+}
+
+/* Pitanja - kartice */
+.questions-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 20px;
+}
+
+/* Kartica */
+.question-box {
+    width: 90%;
+    max-width: 600px;
+    border-radius: 8px;
+    padding: 15px;
+    margin: 10px 0;
+    font-size: 16px;
+    position: relative;
+    text-align: left;
+    transition: transform 0.2s ease;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    border-left: 5px solid;
+}
+
+
+
+
+
+
+/* Datum i vrijeme - smanjeni i bez bolda */
+.question-box .question-date, .question-box .question-time {
+    font-weight: normal !important;
+    font-size: 14px !important;
+    color: #555 !important;
+    display: block;
+    margin-bottom: 5px;
+}
+
+/* Akcijski gumbi (✓ i X) */
+.action-button {
+    position: absolute;
+    right: 15px;
+    top: 30px !important; /*Koliko od vrha*/
+    transform: translateY(-50%);
+    cursor: pointer;
+    font-size: 24px !important;  /* Povećane kvačice i X */
+    font-weight: bold !important;
+    border: none !important;
+    background: none !important;
+}
+
+.checkmark {
+    color: #2e7d32 !important; /* Tamnija zelena */
+}
+
+.delete-btn {
+    color: #1565c0 !important; /* Tamnija plava */
+}
+
+/* Gumb za prikaz pročitane */
+.toggle-read {
+    margin-top: 10px;
+    cursor: pointer;
+    color: #396782;
+    font-weight: bold;
+}
+
+/* Responsivnost */
+@media (max-width: 768px) {
+    .question-box {
+        width: 95%;
+        padding: 12px;
+    }
+
+    .action-button {
+        right: 10px;
+        font-size: 22px;
+    }
+}
+
+/* Corrected CSS for statuses */
+.nepročitano {
+  background-color: #d8f8d8; /* Light green */
+  border-left-color: #2e7d32;
+}
+
+.pročitano { /* Changed from .read to .pročitano */
+  background-color: #e3f2fd; /* Light blue */
+  border-left-color: #38538e;
+}
+
+/* Hide DELETED questions */
+.obrisano { 
+  display: none !important;
+}
+.question-date,
+.question-time {
+    display: inline-block !important;
+    margin: 0 5px 0 0 !important;
+    font-size: 13px !important;
+    color: #666 !important;
+    margin-bottom: 8px !important;
+}
+
+.question-time::before {
+    content:"|";
+    margin-left: 0px;
+    margin-right: 10px;
+}
+/* za broj u gumbu */
+.notification-btn {
+    position: relative;
+    padding-right: 40px !important;
+}
+
+.pulse-badge {
+    position: absolute;
+    top: -8px;       /* Prilagodeno za veći krug */
+    right: -8px;     /* Prilagodeno za veći krug */
+    background: #ff4444;
+    color: white;
+    border-radius: 50%;
+    padding: 6px;    /* Povećan padding */
+    font-size: 14px; /* Povećana veličina fonta */
+    font-weight: bold;
+    min-width: 15px; /* Povećana širina */
+    min-height: 15px;/* Povećana visina */
+    display: none;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.1);
+        opacity: 0.7;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+/* proširenje gumba */
+.notification-btn {
+    position: relative;
+    padding-left: 30px !important; /* Više prostora lijevo za strelicu */
+    padding-right: 15px !important; /* Prostor desno za badge */
+}
+
+.dropdown-arrow {
+    position: absolute;
+    left: 10px; /* Pozicija lijevo */
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 6px solid white; /* Strelica uvijek okrenuta prema dolje */
+}
+
+.pulse-badge {
+    right: -8px; /* Prilagodena pozicija za badge */
+    left: auto; /* Resetiraj lijevu poziciju */
+}
+</style>
+</body>
+</html>
