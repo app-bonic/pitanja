@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Raspored - Upravljanje</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* Privremeni CSS - kasnije ćemo spojiti sa glavnim */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .schedule-item {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: relative;
+            border-left: 4px solid #4CAF50;
+        }
+
+        .schedule-item.completed {
+            border-color: #2196F3;
+            background-color: #e3f2fd;
+        }
+
+        .item-id {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .item-time {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .checkmark {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #4CAF50;
+            font-size: 1.2em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Upravljanje rasporedom</h1>
+        <div id="schedule-list"></div>
+    </div>
+
+    <!-- Google Apps Script integracija -->
+    <script>
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwGUA7D_Y3TcodLF93b0RFY0rEKAbIf_wOAq4_Ik_-MBtrP0Tyri6_kTfEnVb7cAsNJ/exec";
+
+        // Dohvati podatke iz Google Sheetova
+ // Promijenite fetch poziv dodavanjem credentials opcije
+            async function fetchSchedule() {
+            try {
+                const response = await fetch(GOOGLE_SCRIPT_URL, {
+                mode: 'cors',
+                credentials: 'omit'
+                });
+                const data = await response.json();
+                renderSchedule(data);
+            } catch (error) {
+                console.error("Greška pri dohvatu podataka:", error);
+            }
+            }
+
+            async function markAsCompleted(id) {
+            try {
+                await fetch(`${GOOGLE_SCRIPT_URL}?id=${id}`, { 
+                method: 'POST',
+                mode: 'cors',
+                credentials: 'omit'
+                });
+            } catch (error) {
+                console.error("Greška pri spremanju:", error);
+            }
+            }
+            function doOptions() {
+  return ContentService.createTextOutput()
+    .setHeaders({
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type'
+    });
+}
+        // Renderiraj raspored
+        function renderSchedule(items) {
+            const container = document.getElementById('schedule-list');
+            container.innerHTML = '';
+
+            items.forEach(item => {
+                const div = document.createElement('div');
+                div.className = `schedule-item ${item.completed ? 'completed' : ''}`;
+                div.innerHTML = `
+                    <div class="item-id">#${item.id}</div>
+                    <div class="item-time">${item.vrijeme} - ${item.datum}</div>
+                    <div>${item.tekst1}</div>
+                    ${item.tekst2 ? `<div>${item.tekst2}</div>` : ''}
+                    ${!item.completed ? '<div class="checkmark">✓</div>' : ''}
+                `;
+
+                if (!item.completed) {
+                    div.querySelector('.checkmark').addEventListener('click', () => {
+                        markAsCompleted(item.id);
+                        div.classList.add('completed');
+                    });
+                }
+
+                container.appendChild(div);
+            });
+        }
+
+        // Označi kao završeno
+        async function markAsCompleted(id) {
+            try {
+                await fetch(`${GOOGLE_SCRIPT_URL}?id=${id}`, { method: 'POST' });
+            } catch (error) {
+                console.error("Greška pri spremanju:", error);
+            }
+        }
+
+        // Inicijalizacija
+        fetchSchedule();
+    </script>
+</body>
+</html>
