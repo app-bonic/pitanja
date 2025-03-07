@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kongres Raspored</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body, html { margin:0; padding:0; font-family:Arial; background:#f4f4f9; }
+        header { display:flex; justify-content:space-between; padding:10px; background:#396782; color:white; }
+        .question-box { background:#d8f8d8; border-left:5px solid #2e7d32; padding:15px; margin:10px; }
+        .pročitano { background:#e3f2fd!important; border-left-color:#38538e!important; }
+        button { background:#396782; color:white; padding:12px; border:none; cursor:pointer; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="time" id="current-time"></div>
+    </header>
+    <div class="container">
+        <div id="schedule-section">
+            <div class="questions-container" id="raspored-container"></div>
+        </div>
+    </div>
+
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycbyzmPjCqCzAFgAyq-RKfmUh0c_dvW35gTdmIqNhryMD1Y7Lo_sw0HBhyEUTq0sn1aPB/exec";
+let readItems = new Set();
+
+async function fetchData() {
+    try {
+        const response = await fetch(`${API_URL}?action=getProcitano`);
+        const { ids } = await response.json();
+        readItems = new Set(ids.map(id => Number(id)));
+    } catch (error) {
+        console.error('Greška pri dohvatu pročitanih podataka:', error);
+    }
+    try {
+        const response = await fetch(API_URL);
+        const data = await response.json();
+        renderSchedule(data);
+    } catch (error) {
+        console.error('Greška pri dohvatu rasporeda:', error);
+    }
+}
+
+function renderSchedule(items) {
+    const container = document.getElementById('raspored-container');
+    container.innerHTML = '';
+
+    items.forEach(item => {
+        const div = document.createElement('div');
+        div.className = `question-box ${readItems.has(item.id) ? 'pročitano' : ''}`;
+        
+        div.innerHTML = `
+            <span class="question-date">${item.datum}</span>
+            <span class="question-time">${item.vrijeme}</span><br>
+            <strong>${item.tekst1}</strong>
+            <div class="question-text">${item.tekst2}</div>
+            <button class="action-button" onclick="toggleRead(${item.id}, this)">✓</button>
+        `;
+
+        container.appendChild(div);
+    });
+}
+
+async function toggleRead(id, button) {
+    const itemDiv = button.closest('.question-box');
+    if (readItems.has(id)) {
+        readItems.delete(id);
+        itemDiv.classList.remove('pročitano');
+    } else {
+        readItems.add(id);
+        itemDiv.classList.add('pročitano');
+        await markAsRead(id);
+    }
+}
+
+async function markAsRead(id) {
+    try {
+        await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id })
+        });
+    } catch (error) {
+        console.error('Greška pri slanju podataka:', error);
+    }
+}
+
+window.onload = () => {
+    setInterval(() => {
+        document.getElementById('current-time').textContent = new Date().toLocaleTimeString('en-GB', { hour12: false });
+    }, 1000);
+    fetchData();
+    setInterval(fetchData, 60000);
+};
+</script>
+</body>
+</html>
