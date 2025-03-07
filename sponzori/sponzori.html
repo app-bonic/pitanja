@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Viewer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        /* Header */
+        header {
+            background: #2563eb;
+            color: white;
+            padding: 1rem;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 100;
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+        }
+
+        /* Mobile Menu */
+        .menu-btn {
+            display: none;
+            cursor: pointer;
+        }
+
+        /* Main Content */
+        main {
+            margin-top: 80px;
+            padding: 2rem;
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* PDF Container */
+        .pdf-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .pdf-page {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .pdf-page img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        /* Pagination */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .page-btn {
+            padding: 0.5rem 1rem;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        /* Mobile Styles */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background: #2563eb;
+                flex-direction: column;
+                padding: 1rem;
+                text-align: center;
+            }
+
+            .nav-links.active {
+                display: flex;
+            }
+
+            .menu-btn {
+                display: block;
+            }
+
+            .pdf-container {
+                grid-template-columns: 1fr;
+            }
+
+            main {
+                padding: 1rem;
+            }
+             /* Novi pagination stil */
+        .pagination {
+            position: fixed;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            z-index: 200;
+        }
+
+        .page-btn {
+            padding: 12px;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .page-btn:hover {
+            background: #1d4ed8;
+            transform: scale(1.1);
+        }
+
+        /* Zoom stil */
+        .zoomed {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(1.5);
+            z-index: 300;
+            max-width: 80%;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s ease;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 250;
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .pagination {
+                bottom: 20px;
+                top: auto;
+                left: 50%;
+                transform: translateX(-50%);
+                flex-direction: row;
+            }
+            
+            .zoomed {
+                transform: translate(-50%, -50%) scale(1.2);
+                max-width: 95%;
+            }
+        }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">PDF Viewer</div>
+            <div class="menu-btn">☰</div>
+            <div class="nav-links">
+                <a href="#home">Home</a>
+                <a href="#about">About</a>
+                <a href="#contact">Contact</a>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <div class="pdf-container" id="pdfContainer">
+            <!-- Ovdje postavi svoje PDF stranice pretvorene u slike -->
+            <div class="pdf-page">
+                <img src="slika.1.jpg" alt="Page 1">
+            </div>
+            <div class="pdf-page">
+                <img src="slika.2.jpg" alt="Page 2">
+            </div>
+            <div class="pdf-page">
+                <img src="slika.3.jpg" alt="Page 3">
+            </div>
+            <div class="pdf-page">
+                <img src="slika.4.jpg" alt="Page 4">
+            </div>
+        </div>
+
+        <div class="pagination">
+            <button class="page-btn" onclick="showPage(1)">1</button>
+            <button class="page-btn" onclick="showPage(2)">2</button>
+            <button class="page-btn" onclick="showPage(3)">3</button>
+            <button class="page-btn" onclick="showPage(4)">4</button>
+        </div>
+    </main>
+
+    <script>
+        // Modificirani JavaScript
+        let currentZoomedPage = null;
+
+        function togglePage(pageNumber) {
+            const pages = document.querySelectorAll('.pdf-page');
+            const page = pages[pageNumber - 1];
+            const overlay = document.getElementById('overlay');
+
+            if (currentZoomedPage === page) {
+                // Ako kliknemo ponovno na istu stranicu
+                page.classList.remove('zoomed');
+                overlay.style.display = 'none';
+                currentZoomedPage = null;
+            } else {
+                // Ako kliknemo na novu stranicu
+                pages.forEach(p => p.classList.remove('zoomed'));
+                page.classList.add('zoomed');
+                overlay.style.display = 'block';
+                currentZoomedPage = page;
+            }
+
+            // Scrollaj do zoomed stranice
+            page.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        // Klik na overlay za izlazak iz zoom-a
+        document.getElementById('overlay').addEventListener('click', () => {
+            if (currentZoomedPage) {
+                currentZoomedPage.classList.remove('zoomed');
+                overlay.style.display = 'none';
+                currentZoomedPage = null;
+            }
+        });
+
+        // Ostale funkcije ostaju isto
+    </script>
+</body>
+</html>
+</body>
+</html>
