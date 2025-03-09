@@ -96,8 +96,7 @@
         
 
         <div id="questions-section">
-            <div class="questions-container" id="unread-questions"></div>
-            <div class="questions-container" id="read-questions"></div>
+            <div class="questions-container" id="all-questions"></div>
         </div>
     </div>
 
@@ -168,8 +167,30 @@
                 renderQuestions(questions);
             });
         };
-
         const renderQuestions = (questions) => {
+    const container = document.getElementById('all-questions');
+    container.innerHTML = '';
+
+    // Sortiraj sva pitanja po datumu i vremenu (najnovije prvo)
+    questions.sort((a, b) => {
+        const parseDateTime = (q) => {
+            const [day, month, year] = q.date.split('.');
+            const [hours, minutes] = q.time.split(':');
+            return new Date(year, month-1, day, hours, minutes);
+        };
+        return parseDateTime(b) - parseDateTime(a);
+    });
+
+    // Prikazi sva pitanja u jednom kontejneru
+    questions.forEach(question => {
+        if (question.status !== 'obrisano') {
+            container.appendChild(createQuestionElement(question));
+        }
+    });
+
+    updateCounter(questions.filter(q => q.status === 'nepročitano').length);
+};
+       /* const renderQuestions = (questions) => {
             const unreadContainer = document.getElementById('unread-questions');
             const readContainer = document.getElementById('read-questions');
             
@@ -181,10 +202,10 @@
             const readQuestions = questions.filter(q => q.status === 'pročitano');
 
             // Sortiraj pročitana pitanja po datumu i vremenu (od najnovijeg)
-            readQuestions.sort((a, b) => {
-                const parseDate = (dateStr) => {
-                    const [day, month, year] = dateStr.split('.');
-                    return new Date(year, month-1, day);
+            /*readQuestions.sort((a, b) => {
+            //    const parseDate = (dateStr) => {
+            //        const [day, month, year] = dateStr.split('.');
+            //        return new Date(year, month-1, day);
                 };
                 
                 const dateA = parseDate(a.date);
@@ -196,16 +217,16 @@
 
             // Prikazi sva nepročitana pitanja
             unreadQuestions.forEach(question => {
-                unreadContainer.appendChild(createQuestionElement(question));
-            });
+            unreadContainer.appendChild(createQuestionElement(question));
+             });
 
             // Prikazi sortirana pročitana pitanja
             readQuestions.forEach(question => {
-                readContainer.appendChild(createQuestionElement(question));
-            });
+                    readContainer.appendChild(createQuestionElement(question));
+                });
 
-    updateCounter(unreadQuestions.length);
-};
+                updateCounter(unreadQuestions.length);
+            };*/
 
         const createQuestionElement = (question) => {
 
@@ -323,7 +344,7 @@ body, html {
 
 /* Header */
 header {
-    height: 40px;
+    height: 60px; /*širina prve trake*/
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -335,6 +356,7 @@ header {
 /* Vrijeme u headeru */
 .time {
     font-size: 18px;
+    margin-left: 15px;
     
 }
 
@@ -400,7 +422,15 @@ button:hover {
 
 /* Dodatna prilagodba za sekcije */
 
-
+@media (max-width: 768px) {
+    .question-box {
+        width: 90% !important;  /* Ista širina kao schedule-event */
+        max-width: 600px !important;
+        margin: 10px auto !important; /* Centriranje */
+        border-left: 5px solid #396782;
+        background-color: #d8f8d8;
+    }
+}
 
 
 
@@ -425,6 +455,7 @@ button:hover {
 
 /* Pitanja - kartice */
 .questions-container {
+    width: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -433,11 +464,12 @@ button:hover {
 
 /* Kartica */
 .question-box {
+
     width: 90%;
     max-width: 600px;
     border-radius: 8px;
     padding: 15px;
-    margin: 10px 0;
+    margin: 10px auto;
     font-size: 16px;
     position: relative;
     text-align: left;
@@ -715,7 +747,7 @@ button:hover {
 
 /* Fiksni elementi pri skrolanju */
 .header {
-    height: 45px;
+    height: 46px;
     position: fixed;
     top: 0;
     width: 100%;
@@ -723,9 +755,9 @@ button:hover {
 }
 
 .buttons {
-    height: 40px; 
+    height: 45; 
     position: fixed;
-    top: 15px;
+    top: 35px; /*pomak gumbiju Program i Pitanja iz publike*/
     width: 100%;
     background: #f4f4f9;
     z-index: 999;
@@ -738,7 +770,7 @@ button:hover {
 /* Fiksni header rasporeda kada je otvoren */
 .schedule-header {
     position: fixed;
-    top: 100px;
+    top: 120px; /*pomak sadržaja kod Programa*/
     background: #f4f4f9;
     width: 100%;
     z-index: 998;
